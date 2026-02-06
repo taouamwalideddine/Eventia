@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=eventia
+      - DB_PASSWORD=eventia123
+      - DB_DATABASE=eventia
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - PORT=3000
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=eventia
+      - POSTGRES_PASSWORD=eventia123
+      - POSTGRES_DB=eventia
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
