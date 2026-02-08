@@ -9,6 +9,7 @@ import { PdfModule } from './pdf/pdf.module';
 import { User } from './users/entities/user.entity';
 import { Event } from './events/entities/event.entity';
 import { Reservation } from './reservations/entities/reservation.entity';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -18,16 +19,29 @@ import { Reservation } from './reservations/entities/reservation.entity';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST'),
-        port: configService.get('DB_PORT'),
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        database: configService.get('DB_DATABASE'),
-        entities: [User, Event, Reservation],
-        synchronize: true,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const dbType = configService.get('DB_TYPE', 'postgres');
+        
+        if (dbType === 'sqlite') {
+          return {
+            type: 'sqlite',
+            database: configService.get('DB_DATABASE'),
+            entities: [User, Event, Reservation],
+            synchronize: false,
+          };
+        }
+        
+        return {
+          type: 'postgres',
+          host: configService.get('DB_HOST'),
+          port: configService.get('DB_PORT'),
+          username: configService.get('DB_USERNAME'),
+          password: configService.get('DB_PASSWORD'),
+          database: configService.get('DB_DATABASE'),
+          entities: [User, Event, Reservation],
+          synchronize: false,
+        };
+      },
       inject: [ConfigService],
     }),
     UsersModule,
@@ -36,5 +50,6 @@ import { Reservation } from './reservations/entities/reservation.entity';
     ReservationsModule,
     PdfModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

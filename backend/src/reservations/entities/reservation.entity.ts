@@ -5,21 +5,21 @@ import { ReservationStatus } from '../../common/enums/reservation-status.enum';
 
 @Entity('reservations')
 export class Reservation {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-  @Column()
-  userId: string;
+  @Column({ name: 'user_id' })
+  userId: number;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column()
-  eventId: string;
+  @Column({ name: 'event_id' })
+  eventId: number;
 
   @ManyToOne(() => Event)
-  @JoinColumn({ name: 'eventId' })
+  @JoinColumn({ name: 'event_id' })
   event: Event;
 
   @Column({
@@ -32,9 +32,9 @@ export class Reservation {
   @Column({ default: 1 })
   quantity: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }

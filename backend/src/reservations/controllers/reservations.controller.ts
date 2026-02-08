@@ -42,32 +42,33 @@ export class ReservationsController {
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.reservationsService.findOne(id);
   }
 
   @Patch(':id/confirm')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  confirm(@Param('id') id: string) {
+  confirm(@Param('id') id: number) {
     return this.reservationsService.confirm(id);
   }
 
   @Patch(':id/refuse')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  refuse(@Param('id') id: string) {
+  refuse(@Param('id') id: number) {
     return this.reservationsService.refuse(id);
   }
 
   @Patch(':id/cancel')
-  @UseGuards(JwtAuthGuard)
-  cancel(@Param('id') id: string, @Request() req) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PARTICIPANT)
+  cancel(@Param('id') id: number, @Request() req) {
     return this.reservationsService.cancel(id, req.user.userId);
   }
 
   @Get('events/:eventId/capacity')
-  getAvailableCapacity(@Param('eventId') eventId: string) {
+  getAvailableCapacity(@Param('eventId') eventId: number) {
     return this.reservationsService.getAvailableCapacity(eventId);
   }
 }

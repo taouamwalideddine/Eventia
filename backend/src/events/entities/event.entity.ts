@@ -3,8 +3,8 @@ import { EventStatus } from '../../common/enums/event-status.enum';
 
 @Entity('events')
 export class Event {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column()
   title: string;
@@ -15,11 +15,11 @@ export class Event {
   @Column()
   location: string;
 
-  @Column()
-  date: Date;
+  @Column({ name: 'event_date' })
+  eventDate: Date;
 
-  @Column()
-  time: string;
+  // @Column({ type: 'decimal', precision: 10, scale: 2 })
+  // price: number;
 
   @Column()
   capacity: number;
@@ -31,9 +31,9 @@ export class Event {
   })
   status: EventStatus;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }

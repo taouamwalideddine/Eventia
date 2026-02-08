@@ -18,7 +18,7 @@ export class ReservationsService {
     private dataSource: DataSource,
   ) {}
 
-  async create(createReservationDto: CreateReservationDto, userId: string): Promise<Reservation> {
+  async create(createReservationDto: CreateReservationDto, userId: number): Promise<Reservation> {
     return await this.dataSource.transaction(async manager => {
       const event = await this.eventsService.findPublished(createReservationDto.eventId);
       
@@ -67,14 +67,14 @@ export class ReservationsService {
     });
   }
 
-  async findByUser(userId: string): Promise<Reservation[]> {
+  async findByUser(userId: number): Promise<Reservation[]> {
     return this.reservationsRepository.find({
       where: { userId },
       relations: ['event'],
     });
   }
 
-  async findOne(id: string): Promise<Reservation> {
+  async findOne(id: number): Promise<Reservation> {
     const reservation = await this.reservationsRepository.findOne({
       where: { id },
       relations: ['user', 'event'],
@@ -87,7 +87,7 @@ export class ReservationsService {
     return reservation;
   }
 
-  async confirm(id: string): Promise<Reservation> {
+  async confirm(id: number): Promise<Reservation> {
     const reservation = await this.findOne(id);
 
     if (reservation.status !== ReservationStatus.PENDING) {
@@ -115,7 +115,7 @@ export class ReservationsService {
     });
   }
 
-  async refuse(id: string): Promise<Reservation> {
+  async refuse(id: number): Promise<Reservation> {
     const reservation = await this.findOne(id);
 
     if (reservation.status !== ReservationStatus.PENDING) {
@@ -126,7 +126,7 @@ export class ReservationsService {
     return this.reservationsRepository.save(reservation);
   }
 
-  async cancel(id: string, userId: string): Promise<Reservation> {
+  async cancel(id: number, userId: number): Promise<Reservation> {
     const reservation = await this.findOne(id);
 
     if (reservation.userId !== userId) {
@@ -141,7 +141,7 @@ export class ReservationsService {
     return this.reservationsRepository.save(reservation);
   }
 
-  async getAvailableCapacity(eventId: string): Promise<number> {
+  async getAvailableCapacity(eventId: number): Promise<number> {
     const event = await this.eventsService.findPublished(eventId);
     
     const confirmedReservationsCount = await this.reservationsRepository.count({

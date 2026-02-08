@@ -24,11 +24,11 @@ export class EventsService {
   async findAll(): Promise<Event[]> {
     return this.eventsRepository.find({
       where: { status: EventStatus.PUBLISHED },
-      order: { date: 'ASC' },
+      order: { eventDate: 'ASC' },
     });
   }
 
-  async findOne(id: string): Promise<Event> {
+  async findOne(id: number): Promise<Event> {
     const event = await this.eventsRepository.findOne({
       where: { id },
     });
@@ -40,7 +40,7 @@ export class EventsService {
     return event;
   }
 
-  async findPublished(id: string): Promise<Event> {
+  async findPublished(id: number): Promise<Event> {
     const event = await this.eventsRepository.findOne({
       where: { id, status: EventStatus.PUBLISHED },
     });
@@ -52,7 +52,7 @@ export class EventsService {
     return event;
   }
 
-  async update(id: string, updateEventDto: UpdateEventDto): Promise<Event> {
+  async update(id: number, updateEventDto: UpdateEventDto): Promise<Event> {
     const event = await this.findOne(id);
 
     if (event.status === EventStatus.PUBLISHED) {
@@ -67,7 +67,7 @@ export class EventsService {
     return this.eventsRepository.save(event);
   }
 
-  async publish(id: string): Promise<Event> {
+  async publish(id: number): Promise<Event> {
     const event = await this.findOne(id);
 
     if (event.status !== EventStatus.DRAFT) {
@@ -78,7 +78,7 @@ export class EventsService {
     return this.eventsRepository.save(event);
   }
 
-  async cancel(id: string): Promise<Event> {
+  async cancel(id: number): Promise<Event> {
     const event = await this.findOne(id);
 
     if (event.status === EventStatus.CANCELED) {

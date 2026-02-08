@@ -13,7 +13,7 @@ export class PdfController {
   @Get('ticket/:reservationId')
   @UseGuards(JwtAuthGuard)
   async generateTicket(
-    @Param('reservationId') reservationId: string,
+    @Param('reservationId') reservationId: number,
     @Res() res: Response,
   ) {
     try {
