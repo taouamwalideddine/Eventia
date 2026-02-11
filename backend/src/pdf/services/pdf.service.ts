@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { ReservationsService } from '../../reservations/services/reservations.service';
-import PDFDocument from 'pdfkit';
+import * as PDFDocument from 'pdfkit';
 import { ReservationStatus } from '../../common/enums/reservation-status.enum';
 
 @Injectable()
@@ -10,34 +10,54 @@ export class PdfService {
   async generateTicket(reservationId: number): Promise<Buffer> {
     const reservation = await this.reservationsService.findOne(reservationId);
 
+    if (!reservation) {
+      throw new NotFoundException(`Reservation #${reservationId} not found`);
+    }
+
     if (reservation.status !== ReservationStatus.CONFIRMED) {
       throw new BadRequestException('PDF ticket can only be generated for confirmed reservations');
     }
 
-    return new Promise((resolve) => {
-      const doc = new PDFDocument();
-      const chunks: Buffer[] = [];
+    if (!reservation.event) {
+      throw new InternalServerErrorException(`Event data missing for reservation #${reservationId}`);
+    }
 
-      doc.on('data', (chunk) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new (PDFDocument as any)();
+        const chunks: Buffer[] = [];
 
-      // Add content to PDF
-      doc.fontSize(20).text('Event Ticket', { align: 'center' });
-      doc.moveDown();
+        doc.on('data', (chunk) => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', (err) => {
+          console.error('PDF Doc Error:', err);
+          reject(err);
+        });
 
-      doc.fontSize(14).text(`Reservation ID: ${reservation.id}`);
-      doc.text(`Event: ${reservation.event.title}`);
-      doc.text(`Date: ${new Date(reservation.event.eventDate).toLocaleDateString()}`);
-      doc.text(`Location: ${reservation.event.location}`);
-      doc.text(`Quantity: ${reservation.quantity}`);
-      doc.text(`Status: ${reservation.status}`);
-      doc.text(`Booked by: ${reservation.user.name}`);
-      doc.text(`Email: ${reservation.user.email}`);
+        // Add content to PDF
+        doc.fontSize(20).text('Eventia Digital Ticket', { align: 'center' });
+        doc.moveDown();
 
-      doc.moveDown();
-      doc.fontSize(12).text('Please present this ticket at the event entrance.', { align: 'center' });
+        const eventDate = reservation.event.date ? new Date(reservation.event.date).toLocaleDateString() : 'N/A';
 
-      doc.end();
+        doc.fontSize(14).text(`Reservation ID: ${reservation.id}`);
+        doc.text(`Event: ${reservation.event.title || 'Unknown Event'}`);
+        doc.text(`Date: ${eventDate}`);
+        doc.text(`Location: ${reservation.event.location || 'N/A'}`);
+        doc.text(`Quantity: ${reservation.quantity}`);
+        doc.text(`Status: ${reservation.status}`);
+        doc.text(`Booked by: ${reservation.user?.name || 'Unknown User'}`);
+        doc.text(`Email: ${reservation.user?.email || 'N/A'}`);
+
+        doc.moveDown();
+        doc.fontSize(12).text('Scan this ticket at the event entrance.', { align: 'center' });
+        doc.text('Verification ID: ' + Math.random().toString(36).substring(7).toUpperCase(), { align: 'center', color: 'grey' });
+
+        doc.end();
+      } catch (err) {
+        console.error('PDF Generation Exception:', err);
+        reject(err);
+      }
     });
   }
 }

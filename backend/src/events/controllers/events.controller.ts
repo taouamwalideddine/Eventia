@@ -18,7 +18,7 @@ import { UserRole } from '../../common/enums/user-role.enum';
 
 @Controller('events')
 export class EventsController {
-  constructor(private readonly eventsService: EventsService) {}
+  constructor(private readonly eventsService: EventsService) { }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -30,6 +30,13 @@ export class EventsController {
   @Get()
   findAll() {
     return this.eventsService.findAll();
+  }
+
+  @Get('all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  findAllAdmin() {
+    return this.eventsService.findAllAdmin();
   }
 
   @Get(':id')
@@ -56,5 +63,12 @@ export class EventsController {
   @Roles(UserRole.ADMIN)
   cancel(@Param('id') id: number) {
     return this.eventsService.cancel(id);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  remove(@Param('id') id: number) {
+    return this.eventsService.remove(id);
   }
 }

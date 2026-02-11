@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { NeonButton } from '@/components/ui/NeonButton'
+import { useAuth } from '@/context/AuthContext'
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -16,6 +17,13 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
 
   const router = useRouter()
+  const { isAuthenticated } = useAuth()
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/events')
+    }
+  }, [isAuthenticated, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,7 +37,7 @@ export default function RegisterPage() {
     setError(null)
 
     try {
-      await apiClient.post('/auth/register', { name, email, password, role: 'participant' })
+      await apiClient.post('/auth/register', { name, email, password })
       router.push('/auth/login?registered=true')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')

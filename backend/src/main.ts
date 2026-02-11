@@ -26,6 +26,8 @@ async function bootstrap() {
     transform: true,
   }));
 
+
+
   app.useGlobalFilters(new HttpExceptionFilter());
 
   app.setGlobalPrefix('api');

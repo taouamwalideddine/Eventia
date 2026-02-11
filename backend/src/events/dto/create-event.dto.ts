@@ -12,13 +12,14 @@ export class CreateEventDto {
   @MaxLength(255)
   location: string;
 
-  @IsDate()
-  date: Date;
-
   @IsString()
-  time: string;
+  date: string;
 
   @IsInt()
   @Min(1)
   capacity: number;
+
+  @IsInt() // Or IsNumber() if decimal is allowed as input
+  @Min(0)
+  price: number;
 }

@@ -16,10 +16,10 @@ export class Event {
   location: string;
 
   @Column({ name: 'event_date' })
-  eventDate: Date;
+  date: Date;
 
-  // @Column({ type: 'decimal', precision: 10, scale: 2 })
-  // price: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  price: number;
 
   @Column()
   capacity: number;

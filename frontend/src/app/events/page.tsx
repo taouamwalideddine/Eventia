@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { GlassCard } from '@/components/ui/GlassCard'
+import { NeonButton } from '@/components/ui/NeonButton'
+import { apiClient } from '@/lib/api'
 
 interface Event {
   id: string
   title: string
   description: string
   date: string
-  time: string
   location: string
   capacity: number
   status: string
@@ -25,11 +27,7 @@ export default function EventsPage() {
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch('/api/events')
-      if (!response.ok) {
-        throw new Error('Failed to fetch events')
-      }
-      const data = await response.json()
+      const data = await apiClient.get('/events')
       setEvents(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -40,85 +38,91 @@ export default function EventsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading events...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 text-xl mb-4">Error: {error}</div>
-          <button 
-            onClick={fetchEvents}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Try Again
-          </button>
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none" />
+        <div className="text-center z-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto"></div>
+          <p className="mt-4 text-slate-400">Loading events...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Available Events</h1>
-          <Link 
-            href="/"
-            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-          >
-            Back to Home
+    <div className="min-h-screen py-12 px-4 relative overflow-hidden">
+      {/* Background Ambience */}
+      <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-pink-600/10 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[150px] pointer-events-none" />
+
+      <div className="container mx-auto max-w-7xl z-10 relative">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
+          <div>
+            <h1 className="text-4xl font-extrabold text-white mb-2">
+              Available <span className="text-gradient">Events</span>
+            </h1>
+            <p className="text-slate-400">Discover and book extraordinary experiences.</p>
+          </div>
+          <Link href="/">
+            <NeonButton variant="secondary">Back to Home</NeonButton>
           </Link>
         </div>
 
-        {events.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No events available at the moment.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event) => (
-              <div key={event.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{event.title}</h3>
-                  <p className="text-gray-600 mb-4 line-clamp-3">{event.description}</p>
-                  
-                  <div className="space-y-2 text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <span className="font-medium">Date:</span>
-                      <span className="ml-2">{new Date(event.date).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="font-medium">Time:</span>
-                      <span className="ml-2">{event.time}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="font-medium">Location:</span>
-                      <span className="ml-2">{event.location}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="font-medium">Capacity:</span>
-                      <span className="ml-2">{event.capacity} spots</span>
-                    </div>
-                  </div>
+        {error && (
+          <GlassCard className="mb-8 border-red-500/20 text-center">
+            <p className="text-red-200 mb-4">{error}</p>
+            <NeonButton onClick={fetchEvents} variant="primary">Try Again</NeonButton>
+          </GlassCard>
+        )}
 
-                  <div className="mt-6 flex space-x-3">
-                    <Link 
-                      href={`/events/${event.id}`}
-                      className="flex-1 bg-blue-600 text-white text-center py-2 rounded hover:bg-blue-700 transition-colors"
-                    >
-                      View Details
-                    </Link>
+        {events.length === 0 && !error ? (
+          <GlassCard className="text-center py-20">
+            <p className="text-slate-400 text-lg">No events found. Check back later!</p>
+          </GlassCard>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {events.map((event) => (
+              <GlassCard key={event.id} className="flex flex-col hover:scale-[1.02] transition-transform duration-300">
+                <div className="flex-1">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-xl font-bold text-white group-hover:text-violet-400 transition-colors">
+                      {event.title}
+                    </h3>
+                    <span className="px-3 py-1 bg-violet-500/10 border border-violet-500/30 text-violet-300 text-xs font-semibold rounded-full uppercase tracking-wider">
+                      {event.status}
+                    </span>
+                  </div>
+                  <p className="text-slate-400 mb-6 line-clamp-3 leading-relaxed">
+                    {event.description}
+                  </p>
+
+                  <div className="space-y-3 text-sm text-slate-300 border-t border-white/5 pt-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-violet-400">
+                        🗓️
+                      </div>
+                      <span>{new Date(event.date).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-pink-400">
+                        📍
+                      </div>
+                      <span>{event.location}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-cyan-400">
+                        👥
+                      </div>
+                      <span>{event.capacity} spots remaining</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+
+                <div className="mt-8 pt-4 border-t border-white/5">
+                  <Link href={`/events/${event.id}`}>
+                    <NeonButton fullWidth variant="primary">View Details</NeonButton>
+                  </Link>
+                </div>
+              </GlassCard>
             ))}
           </div>
         )}

@@ -2,201 +2,182 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { GlassCard } from '@/components/ui/GlassCard'
+import { NeonButton } from '@/components/ui/NeonButton'
+import { apiClient } from '@/lib/api'
+import { useAuth } from '@/context/AuthContext'
 
 interface Reservation {
   id: string
-  eventId: string
+  quantity: number
+  status: string
+  createdAt: string
   event: {
-    id: string
     title: string
     date: string
-    time: string
     location: string
   }
-  status: string
-  quantity: number
-  createdAt: string
 }
 
 export default function ReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
 
   useEffect(() => {
-    fetchReservations()
-  }, [])
+    if (!authLoading && isAuthenticated) {
+      fetchReservations()
+    } else if (!authLoading && !isAuthenticated) {
+      setLoading(false)
+    }
+  }, [isAuthenticated, authLoading])
 
   const fetchReservations = async () => {
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('Not authenticated')
-      }
-
-      const response = await fetch('/api/reservations/my', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch reservations')
-      }
-      
-      const data = await response.json()
+      const data = await apiClient.get('/reservations/my', localStorage.getItem('token') || undefined)
       setReservations(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err.message : 'Failed to load reservations')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleCancel = async (reservationId: string) => {
+  const handleDownload = async (reservationId: string) => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/reservations/${reservationId}/cancel`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to cancel reservation')
-      }
-
-      // Refresh reservations list
-      fetchReservations()
+      const blob = await apiClient.getFile(`/pdf/ticket/${reservationId}`, localStorage.getItem('token') || undefined)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `ticket-${reservationId}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to cancel reservation')
+      alert(err instanceof Error ? err.message : 'Download failed')
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'CONFIRMED':
-        return 'bg-green-100 text-green-800'
-      case 'REFUSED':
-        return 'bg-red-100 text-red-800'
-      case 'CANCELED':
-        return 'bg-gray-100 text-gray-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  if (loading) {
+  if (loading || authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your reservations...</p>
-        </div>
+      <div className="min-h-[80vh] flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-violet-500/20 border-t-violet-500 rounded-full animate-spin mb-6"></div>
+        <p className="text-slate-500 font-bold uppercase tracking-widest animate-pulse">Loading reservations...</p>
       </div>
     )
   }
 
-  if (error) {
+  if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 text-xl mb-4">Error: {error}</div>
-          <button 
-            onClick={fetchReservations}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Try Again
-          </button>
-        </div>
+      <div className="min-h-[80vh] flex items-center justify-center px-6">
+        <GlassCard className="max-w-md w-full text-center border-white/5 bg-white/[0.02] shadow-2xl">
+          <span className="text-6xl mb-8 block">🔒</span>
+          <h2 className="text-3xl font-bold text-white mb-4 italic tracking-tighter uppercase">Access Required</h2>
+          <p className="text-slate-400 font-medium mb-12">Please sign in to view your reservations.</p>
+          <Link href="/auth/login">
+            <NeonButton variant="primary" fullWidth size="lg">Sign In</NeonButton>
+          </Link>
+        </GlassCard>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Reservations</h1>
-          <Link 
-            href="/events"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Browse Events
+    <div className="min-h-screen py-12 px-6 relative overflow-hidden">
+      {/* Background Dynamics */}
+      <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-violet-600/5 rounded-full blur-[150px] pointer-events-none" />
+
+      <div className="container mx-auto max-w-5xl z-10 relative">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-10">
+          <div>
+            <div className="inline-block px-3 py-1 mb-4 rounded-full border border-violet-500/20 bg-violet-500/5 backdrop-blur-md">
+              <span className="text-[10px] font-bold tracking-[0.2em] text-violet-400 uppercase">Personal Dossier</span>
+            </div>
+            <h1 className="text-5xl md:text-8xl font-black text-white italic tracking-tighter leading-none">
+              My <span className="text-gradient">Reservations</span>
+            </h1>
+          </div>
+          <Link href="/events">
+            <NeonButton variant="ghost" size="lg" className="border-white/10">Browse Gallery</NeonButton>
           </Link>
         </div>
 
-        {reservations.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">You don't have any reservations yet.</p>
-            <Link 
-              href="/events"
-              className="inline-block mt-4 text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Browse available events
+        {error ? (
+          <GlassCard className="text-center py-20 border-red-500/20">
+            <p className="text-red-400 font-bold mb-8 italic">{error}</p>
+            <NeonButton onClick={fetchReservations} variant="primary">Attempt Sync</NeonButton>
+          </GlassCard>
+        ) : reservations.length === 0 ? (
+          <GlassCard className="text-center py-40 border-white/5 bg-white/[0.02]">
+            <div className="text-6xl mb-10 opacity-30">🎫</div>
+            <p className="text-slate-400 text-3xl font-black italic tracking-tighter mb-4 uppercase">No Bookings</p>
+            <p className="text-slate-500 font-medium mb-12">You have not made any event reservations yet.</p>
+            <Link href="/events">
+              <NeonButton variant="primary" size="lg">Browse Events</NeonButton>
             </Link>
-          </div>
+          </GlassCard>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-12">
             {reservations.map((reservation) => (
-              <div key={reservation.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900">
-                        {reservation.event.title}
-                      </h3>
-                      <div className="mt-2 space-y-1 text-sm text-gray-600">
-                        <div>Date: {new Date(reservation.event.date).toLocaleDateString()}</div>
-                        <div>Time: {reservation.event.time}</div>
-                        <div>Location: {reservation.event.location}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(reservation.status)}`}>
+              <GlassCard key={reservation.id} className="group relative border-white/5 hover:border-white/10 transition-all duration-700 overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-500/10 to-transparent pointer-events-none" />
+
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-12 relative z-10">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-6 mb-6">
+                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] ${reservation.status === 'CONFIRMED' ? 'bg-green-500/10 text-green-400 border border-green-500/30' :
+                        reservation.status === 'PENDING' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30' :
+                          'bg-red-500/10 text-red-400 border border-red-500/30'
+                        }`}>
                         {reservation.status}
                       </span>
+                      <span className="text-slate-600 text-[10px] font-black uppercase tracking-widest">
+                        Logged: {new Date(reservation.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <h3 className="text-3xl font-black text-white italic group-hover:text-gradient transition-all duration-500 mb-6 tracking-tighter">
+                      {reservation.event.title}
+                    </h3>
+
+                    <div className="flex flex-wrap gap-10 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">📍</span>
+                        <span className="truncate max-w-[200px]">{reservation.event.location}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">🗓️</span>
+                        <span>{new Date(reservation.event.date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-white">
+                        <span className="text-xl">🎫</span>
+                        <span>{reservation.quantity} Tickets</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm text-gray-600">
-                        <div>Quantity: {reservation.quantity} spot{reservation.quantity > 1 ? 's' : ''}</div>
-                        <div>Booked on: {new Date(reservation.createdAt).toLocaleDateString()}</div>
-                      </div>
-                      
-                      <div className="flex space-x-3">
-                        {reservation.status === 'CONFIRMED' && (
-                          <a
-                            href={`/pdf/ticket/${reservation.id}`}
-                            target="_blank"
-                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm"
-                          >
-                            Download Ticket
-                          </a>
-                        )}
-                        
-                        {reservation.status === 'PENDING' && (
-                          <button
-                            onClick={() => handleCancel(reservation.id)}
-                            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-                          >
-                            Cancel
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                  <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4">
+                    {reservation.status === 'CONFIRMED' && (
+                      <NeonButton variant="secondary" size="md" onClick={() => handleDownload(reservation.id)}>
+                        Download Ticket
+                      </NeonButton>
+                    )}
+                    <Link href={`/events/${reservation.id}`} className="flex-1">
+                      <NeonButton variant="ghost" size="md" fullWidth className="border-white/10">View Details</NeonButton>
+                    </Link>
                   </div>
                 </div>
-              </div>
+              </GlassCard>
             ))}
           </div>
         )}
       </div>
+
+      <footer className="mt-40 py-20 border-t border-white/5 text-center">
+        <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.4em]">Eventia Digital Ecosystem &copy; 2024</p>
+      </footer>
     </div>
   )
 }

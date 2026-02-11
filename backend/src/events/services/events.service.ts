@@ -11,7 +11,7 @@ export class EventsService {
   constructor(
     @InjectRepository(Event)
     private eventsRepository: Repository<Event>,
-  ) {}
+  ) { }
 
   async create(createEventDto: CreateEventDto): Promise<Event> {
     const event = this.eventsRepository.create({
@@ -24,7 +24,17 @@ export class EventsService {
   async findAll(): Promise<Event[]> {
     return this.eventsRepository.find({
       where: { status: EventStatus.PUBLISHED },
-      order: { eventDate: 'ASC' },
+      order: {
+        date: 'ASC',
+      },
+    });
+  }
+
+  async findAllAdmin(): Promise<Event[]> {
+    return this.eventsRepository.find({
+      order: {
+        date: 'DESC',
+      },
     });
   }
 
@@ -87,5 +97,10 @@ export class EventsService {
 
     event.status = EventStatus.CANCELED;
     return this.eventsRepository.save(event);
+  }
+
+  async remove(id: number): Promise<void> {
+    const event = await this.findOne(id);
+    await this.eventsRepository.remove(event);
   }
 }
